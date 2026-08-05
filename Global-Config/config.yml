@@ -9,9 +9,14 @@ separateMajorMinor: false
 # to be raised as PRs in a single run. Disable the hourly PR cap (default: 2)
 # while keeping the concurrent-PR safety net (default: 10) in place.
 prHourlyLimit: 0
+# Always rebase open PR branches when they fall behind their base branch.
+# The default "auto" is too passive; "behind-base-branch" ensures PRs stay
+# up-to-date so that later main commits (e.g. base image bumps) are pulled
+# into every open Renovate PR without manual intervention.
+rebaseWhen: "behind-base-branch"
 # Default branches to scan - can be overridden via RENOVATE_BASE_BRANCHES env var.
 # Regex patterns must be enclosed in slashes (/.../).
-baseBranchPatterns: ["main", "/^release\\/.*/"]
+baseBranches: ["main", "/^release\\/.*/"]
 
 # Dependencies that cannot be resolved (e.g. hosted on separate Enterprise instance)
 ignoreDeps:
@@ -49,6 +54,12 @@ packageRules:
     matchBaseBranches:
       - main
     groupName: "major dependencies"
+  # Block major updates on release branches
+  - matchUpdateTypes:
+      - major
+    matchBaseBranches:
+      - "/^release\\/.*/"
+    enabled: false
   # Minor and patch updates on all branches (main and release/*)
   - matchUpdateTypes:
       - minor
@@ -147,7 +158,7 @@ lockFileMaintenance:
   branchTopic: "renovate/minor-patch-updates"
   commitMessagePrefix: "chore(deps):"
   commitMessageAction: "Updates minor and patch versions in the apax-lock.json"
-  baseBranchPatterns: ["main", "/^release\\/.*/"]
+  baseBranches: ["main", "/^release\\/.*/"]
 
 # Allow specific commands for post-upgrade tasks
 allowedCommands:
@@ -168,7 +179,7 @@ postUpgradeTasks:
 # Custom manager: regex-based dependency detection in apax.yml
 customManagers:
   - customType: regex
-    managerFilePatterns:
+    fileMatch:
       - "/apax\\.yml$/"
     matchStrings:
       - "['\"](?<depName>@(ax|simatic-ax)/[a-z0-9\\-]+)['\"]\\s*:\\s*(?<currentValue>\\^?\\d+\\.\\d+\\.\\d+)"
